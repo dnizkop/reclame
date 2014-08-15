@@ -1,15 +1,21 @@
 package com.reclame.activity;
 
-
+import java.io.IOException;
 import java.util.ArrayList;
 
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.BasicResponseHandler;
+import org.apache.http.impl.client.DefaultHttpClient;
+
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.View.OnClickListener;
+
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -20,11 +26,9 @@ import com.reclame.R;
 import com.reclame.adapter.ReclameAdapter;
 import com.reclame.data.ItemReclame;
 
-
-public class MainActivity extends Activity implements OnClickListener {
+public class MainActivity extends Activity {
 
 	public ReclameAdapter reclameAdapter;
-	public Context ctx;
 	public ArrayList<ItemReclame> reclames = new ArrayList<ItemReclame>();
 
 	@Override
@@ -32,46 +36,65 @@ public class MainActivity extends Activity implements OnClickListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		Button btnName = (Button) findViewById(R.id.btnName);
-		btnName.setOnClickListener(this);
-
-		ctx = this;
+		AsynhLoadJSON load = new AsynhLoadJSON();
+		load.execute();
 	}
 
-	@Override
-	public void onClick(View v) {
-		Intent intent = new Intent(this, SplashScreen.class);
-		startActivityForResult(intent, 1);
-	}
+	class AsynhLoadJSON extends AsyncTask<Void, String, Void> {
 
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (data == null) {
-			return;
+		@Override
+		protected Void doInBackground(Void... params) {
+
+			DefaultHttpClient hC = new DefaultHttpClient();
+			ResponseHandler<String> res = new BasicResponseHandler();
+			HttpGet http = new HttpGet("http://reclame.esy.es");
+			String response = "";
+
+			try {
+				response = hC.execute(http, res);
+				Log.d("LOG", response);
+			} catch (ClientProtocolException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			publishProgress(response);
+
+			// TODO Auto-generated method stub
+			return null;
 		}
-		
-		Button start_post = (Button)findViewById(R.id.start_post);
-		start_post.setVisibility(View.VISIBLE);
-		
-		String name = data.getStringExtra("name");
-		Log.d("LOG", "Test DATA " + name);
 
-		Gson gson = new GsonBuilder().create();
-		ItemReclame[] reclame = gson.fromJson(name, ItemReclame[].class);
+		@Override
+		protected void onProgressUpdate(String... values) {
+			super.onProgressUpdate(values);
 
-		for (ItemReclame temp : reclame) {
-			Log.d("LOG", "Ёлемент " + temp.toString());
-			reclames.add(temp);
+			Button start_post = (Button) findViewById(R.id.start_post);
+			start_post.setVisibility(View.VISIBLE);
+
+			String name = values[0];
+			
+			Log.d("LOG", name);
+
+			
+			Gson gson = new GsonBuilder().create();
+			ItemReclame[] reclame = gson.fromJson(name, ItemReclame[].class);
+
+			
+			for (ItemReclame temp : reclame) {
+				Log.d("LOG", "Ёлемент " + temp.toString());
+				reclames.add(temp);
+			}
+
+			
+			reclameAdapter = new ReclameAdapter(getBaseContext(), reclames);
+			ListView lvMain = (ListView) findViewById(R.id.lvMain);
+			lvMain.setAdapter(reclameAdapter);
+			
 		}
 
-		reclameAdapter = new ReclameAdapter(ctx, reclames);
-		ListView lvMain = (ListView) findViewById(R.id.lvMain);
-		lvMain.setAdapter(reclameAdapter);
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
 	}
 
 	// выводим информацию о корзине
@@ -87,4 +110,5 @@ public class MainActivity extends Activity implements OnClickListener {
 		intent.putExtra("name", result);
 		startActivity(intent);
 	}
+
 }

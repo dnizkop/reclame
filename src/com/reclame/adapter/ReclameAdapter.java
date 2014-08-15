@@ -1,8 +1,15 @@
 package com.reclame.adapter;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.AsyncTask;
+import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +17,7 @@ import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.reclame.R;
@@ -65,7 +73,58 @@ public class ReclameAdapter extends BaseAdapter {
 		cbBuy.setTag(position);
 		cbBuy.setChecked(item.box);
 
+		ImageView ivImage = (ImageView) view.findViewById(R.id.ivImage);
+
+		Pair p = new Pair(item.getUrl_picture(), ivImage);
+
+		AsynhLoadImage load = new AsynhLoadImage();
+		load.execute(p);
+
 		return view;
+	}
+
+	class AsynhLoadImage extends AsyncTask<Pair, Pair, Void> {
+
+		@Override
+		protected Void doInBackground(Pair... params) {
+
+			Pair p = params[0];
+
+			String url = (String) p.first;
+			ImageView im = (ImageView) p.second;
+
+			Bitmap b = null;
+
+			Log.d("LOG", "url " + url);
+
+			try {
+				URL newurl = new URL(url);
+				b = BitmapFactory.decodeStream(newurl.openConnection()
+						.getInputStream());
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			publishProgress(new Pair(im,b));
+
+			return null;
+		}
+
+		@Override
+		protected void onProgressUpdate(Pair... values) {
+			// TODO Auto-generated method stub
+			super.onProgressUpdate(values);
+
+			Pair p = values[0];
+			
+			ImageView im = (ImageView)p.first;
+			Bitmap b = (Bitmap)p.second;
+
+			im.setImageBitmap(b);
+		}
+
 	}
 
 	// товар по позиции
