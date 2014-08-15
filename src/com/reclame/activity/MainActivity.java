@@ -10,12 +10,13 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -25,6 +26,7 @@ import com.google.gson.GsonBuilder;
 import com.reclame.R;
 import com.reclame.adapter.ReclameAdapter;
 import com.reclame.data.ItemReclame;
+import com.reclame.db.DBHelper;
 
 public class MainActivity extends Activity {
 
@@ -75,24 +77,47 @@ public class MainActivity extends Activity {
 			start_post.setVisibility(View.VISIBLE);
 
 			String name = values[0];
-			
+
 			Log.d("LOG", name);
 
-			
 			Gson gson = new GsonBuilder().create();
 			ItemReclame[] reclame = gson.fromJson(name, ItemReclame[].class);
 
-			
+			/*
+			 * Create DataBase
+			 */
+
+			DBHelper dbHelper = new DBHelper(getBaseContext());
+			SQLiteDatabase db = dbHelper.getWritableDatabase();
+
 			for (ItemReclame temp : reclame) {
 				Log.d("LOG", "Элемент " + temp.toString());
+
+				// создаем объект для данных
+				ContentValues cv = new ContentValues();
+
+				// получаем данные из полей ввода
+				String _name = temp.getName();
+				String description = temp.getDescription();
+				String url_picture = temp.getUrl_picture();
+
+				cv.put("name", _name);
+				cv.put("description", description);
+				cv.put("url_picture", url_picture);
+				
+				// вставляем запись и получаем ее ID
+				long rowID = db.insert("mytable", null, cv);
+				Log.d("LOG", "row inserted, ID = " + rowID);
+
+				// подключаемся к БД
+
 				reclames.add(temp);
 			}
 
-			
 			reclameAdapter = new ReclameAdapter(getBaseContext(), reclames);
 			ListView lvMain = (ListView) findViewById(R.id.lvMain);
 			lvMain.setAdapter(reclameAdapter);
-			
+
 		}
 
 	}
