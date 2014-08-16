@@ -12,6 +12,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -32,11 +33,14 @@ public class MainActivity extends Activity {
 
 	public ReclameAdapter reclameAdapter;
 	public ArrayList<ItemReclame> reclames = new ArrayList<ItemReclame>();
+	private DBHelper dbHelper;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
+		dbHelper = new DBHelper(getBaseContext());
 
 		AsynhLoadJSON load = new AsynhLoadJSON();
 		load.execute();
@@ -86,8 +90,6 @@ public class MainActivity extends Activity {
 			/*
 			 * Create DataBase
 			 */
-
-			DBHelper dbHelper = new DBHelper(getBaseContext());
 			SQLiteDatabase db = dbHelper.getWritableDatabase();
 
 			for (ItemReclame temp : reclame) {
@@ -96,20 +98,29 @@ public class MainActivity extends Activity {
 				// создаем объект для данных
 				ContentValues cv = new ContentValues();
 
-				// получаем данные из полей ввода
+				long ID = temp.getID();
 				String _name = temp.getName();
 				String description = temp.getDescription();
 				String url_picture = temp.getUrl_picture();
 
-				cv.put("name", _name);
-				cv.put("description", description);
-				cv.put("url_picture", url_picture);
-				
-				// вставляем запись и получаем ее ID
-				long rowID = db.insert("mytable", null, cv);
-				Log.d("LOG", "row inserted, ID = " + rowID);
+				Cursor c = db.query("news", new String[] { "ID" }, "ID=?",
+						new String[] { String.valueOf(ID) }, null,
 
-				// подключаемся к БД
+						null, null);
+				
+				if (!c.moveToFirst()) {
+					//Toast.makeText(getBaseContext(), "WAS", Toast.LENGTH_LONG).show();
+					cv.put("ID", ID);
+					cv.put("name", _name);
+					cv.put("description", description);
+					cv.put("url_picture", url_picture);
+					cv.put("checked", false);
+					cv.put("is_posting", false);
+					
+
+					long rowID = db.insert("news", null, cv);
+					Log.d("LOG", "row inserted, ID = " + rowID);
+				}							
 
 				reclames.add(temp);
 			}
@@ -119,15 +130,29 @@ public class MainActivity extends Activity {
 			lvMain.setAdapter(reclameAdapter);
 
 		}
-
 	}
 
 	// выводим информацию о корзине
 	public void showResult(View v) {
 		String result = "Постить:";
+
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
+
 		for (ItemReclame item : reclameAdapter.getBox()) {
-			if (item.box)
+			if (item.box) {
+				ContentValues cv = new ContentValues();
+
 				result += "\n" + item.toString();
+
+				String id = String.valueOf(item.getID());
+				cv.put("checked", true);
+
+				// обновляем по id
+				int updCount = db.update("news", cv, "id = ?",
+						new String[] { id });
+				Log.d("LOG", "updated rows count = " + updCount);
+			}
+
 		}
 		Toast.makeText(this, result, Toast.LENGTH_LONG).show();
 

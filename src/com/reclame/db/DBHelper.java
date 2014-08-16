@@ -17,9 +17,9 @@ public class DBHelper extends SQLiteOpenHelper {
 	public void onCreate(SQLiteDatabase db) {
 		Log.d(LOG_TAG, "--- onCreate database ---");
  
-		db.execSQL("create table mytable ("
+		db.execSQL("create table news ("
 				+ "ID integer primary key autoincrement," + "name varchar(100), description text,"
-				+ "url_picture text" + ");");
+				+ "url_picture text, checked boolean, is_posting boolean" + ");");
 	}
 
 	@Override
