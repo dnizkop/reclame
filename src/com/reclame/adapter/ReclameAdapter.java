@@ -1,13 +1,20 @@
 package com.reclame.adapter;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.text.format.Time;
 import android.util.Log;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -96,18 +103,22 @@ public class ReclameAdapter extends BaseAdapter {
 			Bitmap b = null;
 
 			Log.d("LOG", "url " + url);
-
+			
 			try {
 				URL newurl = new URL(url);
 				b = BitmapFactory.decodeStream(newurl.openConnection()
 						.getInputStream());
+				
+				String folderToSave = Environment.getExternalStorageDirectory().toString(); 
+				// папка куда сохранять, в данном случае - корень SD-карты
+				SavePicture(b, folderToSave, url);
 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-			publishProgress(new Pair(im,b));
+
+			publishProgress(new Pair(im, b));
 
 			return null;
 		}
@@ -118,11 +129,41 @@ public class ReclameAdapter extends BaseAdapter {
 			super.onProgressUpdate(values);
 
 			Pair p = values[0];
-			
-			ImageView im = (ImageView)p.first;
-			Bitmap b = (Bitmap)p.second;
 
-			im.setImageBitmap(b);
+			ImageView im = (ImageView) p.first;
+			Bitmap b = (Bitmap) p.second;
+
+			im.setImageBitmap(b);						
+
+		}
+
+		private String SavePicture(Bitmap b, String folderToSave, String url) {
+
+			OutputStream fOut = null;
+			Time time = new Time();
+			time.setToNow();
+			
+			String mas[] = url.split("/");
+			url = mas[mas.length-1];
+					
+						
+
+			try {
+				File file = new File(folderToSave, url); 
+				fOut = new FileOutputStream(file);
+				
+				b.compress(Bitmap.CompressFormat.JPEG, 85, fOut); 				
+				fOut.flush();
+				fOut.close();
+				MediaStore.Images.Media.insertImage(ctx.getContentResolver(),
+						file.getAbsolutePath(), file.getName(), file.getName()); 
+			} catch (Exception e) // здесь необходим блок отслеживания реальных
+									// ошибок и исключений, общий Exception
+									// приведен в качестве примера
+			{
+				return e.getMessage();
+			}
+			return "";
 		}
 
 	}
