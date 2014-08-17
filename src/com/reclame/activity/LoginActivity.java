@@ -51,7 +51,7 @@ public class LoginActivity extends FragmentActivity {
         }
 
         String[] fingerprint = VKUtil.getCertificateFingerprint(this, this.getPackageName());
-        Log.d("Fingerprint", fingerprint[0]);
+//        Log.d("Fingerprint", fingerprint[0]);
     }
     private void showLogout() {
         getSupportFragmentManager()
@@ -119,12 +119,9 @@ public class LoginActivity extends FragmentActivity {
     };
     private void startTestActivity() {
     	
-    	Intent intent =  getIntent();
+    	Intent intent =  getIntent();    	
 		
-    	String result = intent.getStringExtra("name");
-		
-    	Intent intent1 = new Intent(this, PostToWall.class);
-		intent1.putExtra("name", result);
+    	Intent intent1 = new Intent(this, PostToWall.class);		
 		startActivity(intent1);	     
     }
 

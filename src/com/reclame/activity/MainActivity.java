@@ -33,8 +33,15 @@ public class MainActivity extends Activity {
 
 	public ReclameAdapter reclameAdapter;
 	public ArrayList<ItemReclame> reclames = new ArrayList<ItemReclame>();
+	
 	private DBHelper dbHelper;
 
+	final String LOG = "LOG";
+	
+	
+	final String url = "http://reclame.esy.es";
+	
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -45,20 +52,56 @@ public class MainActivity extends Activity {
 		AsynhLoadJSON load = new AsynhLoadJSON();
 		load.execute();
 	}
+	
+	private void pushToDB(ItemReclame[] reclame){
+	
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
 
+		for (ItemReclame temp : reclame) {				
+
+			// создаем объект для данных
+			ContentValues cv = new ContentValues();
+
+			long ID = temp.getID();
+			String _name = temp.getName();
+			String description = temp.getDescription();
+			String url_picture = temp.getUrl_picture();
+
+			Cursor c = db.query("news", new String[] { "ID" }, "ID=?",
+					new String[] { String.valueOf(ID) }, null,
+
+					null, null);
+			
+			if (!c.moveToFirst()) {
+				cv.put("ID", ID);
+				cv.put("name", _name);
+				cv.put("description", description);
+				cv.put("url_picture", url_picture);
+				cv.put("checked", false);
+				cv.put("is_posting", false);
+				
+
+				long rowID = db.insert("news", null, cv);
+				Log.d("LOG", "row inserted, ID = " + rowID);
+			}							
+			
+		}
+		
+	}
+	
 	class AsynhLoadJSON extends AsyncTask<Void, String, Void> {
 
 		@Override
-		protected Void doInBackground(Void... params) {
+		protected Void doInBackground(Void... values) {						
 
 			DefaultHttpClient hC = new DefaultHttpClient();
 			ResponseHandler<String> res = new BasicResponseHandler();
-			HttpGet http = new HttpGet("http://reclame.esy.es");
+			HttpGet http = new HttpGet(url);
 			String response = "";
 
 			try {
 				response = hC.execute(http, res);
-				Log.d("LOG", response);
+				Log.d(LOG, response);
 			} catch (ClientProtocolException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -80,48 +123,26 @@ public class MainActivity extends Activity {
 			Button start_post = (Button) findViewById(R.id.start_post);
 			start_post.setVisibility(View.VISIBLE);
 
-			String name = values[0];
+			/*	
+			 * get json text
+			 * */
+			String jsonText = values[0];
 
-			Log.d("LOG", name);
+			Log.d(LOG, jsonText);
+			
+			/*	
+			 * deserialize json
+			 * */
 
 			Gson gson = new GsonBuilder().create();
-			ItemReclame[] reclame = gson.fromJson(name, ItemReclame[].class);
+			ItemReclame[] reclame = gson.fromJson(jsonText, ItemReclame[].class);
 
-			/*
-			 * Create DataBase
-			 */
-			SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-			for (ItemReclame temp : reclame) {
-				Log.d("LOG", "Элемент " + temp.toString());
-
-				// создаем объект для данных
-				ContentValues cv = new ContentValues();
-
-				long ID = temp.getID();
-				String _name = temp.getName();
-				String description = temp.getDescription();
-				String url_picture = temp.getUrl_picture();
-
-				Cursor c = db.query("news", new String[] { "ID" }, "ID=?",
-						new String[] { String.valueOf(ID) }, null,
-
-						null, null);
-				
-				if (!c.moveToFirst()) {
-					//Toast.makeText(getBaseContext(), "WAS", Toast.LENGTH_LONG).show();
-					cv.put("ID", ID);
-					cv.put("name", _name);
-					cv.put("description", description);
-					cv.put("url_picture", url_picture);
-					cv.put("checked", false);
-					cv.put("is_posting", false);
-					
-
-					long rowID = db.insert("news", null, cv);
-					Log.d("LOG", "row inserted, ID = " + rowID);
-				}							
-
+			pushToDB(reclame);
+			
+			/*	
+			 * Add to ArrayList
+			 * */
+			for (ItemReclame temp : reclame) {	
 				reclames.add(temp);
 			}
 
@@ -156,8 +177,7 @@ public class MainActivity extends Activity {
 		}
 		Toast.makeText(this, result, Toast.LENGTH_LONG).show();
 
-		Intent intent = new Intent(this, LoginActivity.class);
-		intent.putExtra("name", result);
+		Intent intent = new Intent(this, LoginActivity.class);		
 		startActivity(intent);
 	}
 
